@@ -266,7 +266,6 @@ Because of the obvious complexity I concluded I need to write a decompiler to
 focus more on the structure for the bytecode. Interestingly this was simple,
 starting from the emulator codebase. The decompiler also did evaluate
 instructions, it just behaved differently in that it does not follow jumps.
-Also the output was changed considerably to see better what is happening.
 
 ```console
 python3 decompiler.py  | wc -l
@@ -274,16 +273,18 @@ python3 decompiler.py  | wc -l
 ```
 
 The bytecode contains 44850 instructions!
+Next I looked at the output of the decompiler and found symmetric patterns:
 
-Next I looked at the output of the decompiler and found symmetric patterns.
-I thought this looks like a linear equation. And then the next one.
+1. 37 constants which are multiplied with each flag
+2. The outcome of this multiplication is compared with another constant value
+
+This looks like a linear equation.
 A system of linear equations?
 This was the breakthrough!
-
-I verified my assumption immediately using grep.
+I verified my assumption immediately using grep (just grep for seek).
 
 And indeed or each of the 37 equations 37 coefficients where prepared using
-seeks.  And the outcome of every equation was again compared with a seek to
+seeks. And the outcome of every equation was again compared with a seek to
 jump to exit and fail.
 
 Next I patched the decompiler to print the coefficients and the outcome of the
@@ -368,5 +369,6 @@ str
 
 I am pretty happy with the solution. I think the decisions and methodologies
 taken where appropriate for the challenge. Please note that all source code is
-posted as is. I did not polish it after solving.
+posted as is. I did not polish it after solving to provide a realistic reading
+experience.
 
