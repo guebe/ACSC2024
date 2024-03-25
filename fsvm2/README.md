@@ -229,12 +229,6 @@ $ cat flag.txt
 openECSC{ABCDEFGHIJKLMNOPQRSTUVWXYYZ}
 ```
 
-After running the emulator please note the number of instructions executed:
-```console
-$ python3 emulator.py | wc -l
-11054
-```
-
 Then I identified the next seek which chose the wrong path. I resorted to
 patching the bytecode to go the other path (replacing != with ==). I did the
 patch in the hexdump of the bytecode and then used xxd -r to reverse it back to
@@ -268,7 +262,7 @@ starting from the emulator codebase. The decompiler also did evaluate
 instructions, it just behaved differently in that it does not follow jumps.
 
 ```console
-python3 decompiler.py  | wc -l
+$ python3 decompiler.py  | wc -l
 44850
 ```
 
