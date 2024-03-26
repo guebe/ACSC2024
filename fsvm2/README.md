@@ -278,7 +278,7 @@ Looking for symmetric patterns in the output using `grep` I found:
 
 This was the breakthrough!
 
-**system of linear equations found in the bytecode**
+**system of linear equations represented in the bytecode**
 
 $$a_{1,1} x_{37} + a_{1,2} x_{36}+ \cdots + a_{1,37} x_{1} = b_{1}$$
 
