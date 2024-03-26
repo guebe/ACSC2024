@@ -386,3 +386,6 @@ equations, was solved using simple tools like `grep`.
 Please note that all source code is posted as is was. It was not polished
 after the challenge by intent to provide a realistic reading experience.
 
+![emulator](./emulator.py)
+![decompiler](./decompiler.py)
+
