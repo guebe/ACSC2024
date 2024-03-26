@@ -14,18 +14,17 @@ vm - the virtual machine (ELF 64-bit, x86-64, not stripped)
 
 ## Writeup
 
-I did this writeup because I enjoyed solving the filesystem virtual machine
-(fsvm) challenges. This writeup is about the second challenge of two.
+I did this writeup because I enjoyed solving the fsvm virtual machine
+challenges. fsvm stands for filesystem virtual machine. The registers the vm
+uses are files in the regs directory.
 
 After having solved fsvm the day before I was eager to continue with the second
-version of the virtual machine. I wanted to reuse the emulator I have written
-for the first version of the virtual machine and I thought it would be an easy
-solve. Both turned out to be wrong. You will see why soon.
+version of the virtual machine. I thought it would be an easy solve reusing the
+emulator I have written for the first version of the virtual machine. This
+turned out to be wrong. You will see why soon.
 
-fsvm stands for filesystem virtual machine. The registers the vm uses are files
-in the regs directory.
+This is how the hexdump of the bytecode looks like:
 
-This is how the bytecode looks like reading its hexdump:
 ```console
 $ xxd bytecode | head
 00000000: 4041 5200 5200 5201 5401 5100 0100 5200  @AR.R.R.T.Q...R.
@@ -40,11 +39,10 @@ $ xxd bytecode | head
 00000090: 0101 5103 0101 5102 0101 5102 0101 5102  ..Q...Q...Q...Q.
 ```
 
-You have to read the bytecode like this: The readable ASCII characters are the
-instructions. And the unprintable bytes are the arguments. Each argument being
-a register number. This was discovered in the first part of the challenge
-reversing the vm binary. The following notes I have taken for challenge one
-help reading the code:
+The bytecode reads like this: The readable ASCII characters are the
+instructions. And the unprintable *.* characters are the arguments. Each
+argument being a register number. The following notes I have taken during
+solving the first part of the challenge help reading the code:
 
 ```
 , reg0 = ""      @ reg0 = "0" 
@@ -72,11 +70,11 @@ W    exit()
 +    seek(reg5) if reg6 < reg7
 ```
 
-Most of it was reversed using the decompiler ghidra.
+Most of it was reversed using ghidra on the interpret() function:
 ![interpret function decompiled](ghidra.png)
 
-My plan was to start the vm and use strace to check filesystem access, but the
-provided vm failed.
+My plan was to start the vm and use strace to check filesystem access, but see
+what happened:
 
 ```console
 $ ./vm
@@ -102,10 +100,10 @@ write(1, "File_not_found\n", 15File_not_found
 ```
 
 I misjudged the output completely, thinking the vm was buggy, and solving this
-being part of the challenge 😀. Thus I ran my emulator from day 1:
+being part of the challenge 😀. Challenge accepted, I ran my emulator from day 1:
 
 ```console
-$ python3 emulator.py # reads bytecode
+$ python3 emulator.py # reads bytecode file implicitely
 <snip>
 b'?'0xf6 reg0=fŬagĮtx
 b'?'0xfa reg0=fŬagĮtxt
@@ -113,30 +111,32 @@ b'-'0xfe reg1=''
 b'V'0xff  
 ```
 
-*?*, *-* and *V* are the instructions. The address next to it is the byteoffset
-inside the bytecode file. After that comes the side-effect of the instruction,
-mostly setting a register to a specific value.
+* *?*, *-* and *V* are the instructions.
+* The address next to it is the byteoffset inside the bytecode.
+* After that comes the side-effect of the instruction. Most of the time setting a register to a value.
 
 It appeared this changed from version 1 of the virtual machine:
 
-1. The V instruction changed its implementation from reading from stdin to
-   reading the file specified in reg0.
-2. The filename string was messed up. Because the semantics of instructions
+1. The filename string was messed up. Because the semantics of instructions
    where changed.
+2. The V instruction changed its implementation from reading from stdin to
+   reading the file specified in reg0.
 
-My next plan was to port the emulator to this new version.
-I used the following techniques, which proved to be effective:
+My plan was to port the emulator to this new version. This is not easy
+because subtle differences will lead to big trouble later-on. The following
+technique, proved to be very effective in finding, fixing and testing those
+subtle differences:
 
-1. I compared both decompiled versions of the vm's interpret function.
-2. I ran the virtual machine and my emulator side by side, using gdb.
+1. Comparing both decompiled versions of the vm's interpret function.
+2. Running the virtual machine and my emulator side by side, using gdb.
 
-Putting aside C++ std::string remnants the side-by-side diff shows which
-instructions changed and added:
+Ignoring C++ std::string code the side-by-side diff shows which instructions
+where changed and added:
 
 ![side by side diff of V instruction](diff.png)
 
-After fixing my emulator I ran the virtual machine with gdb to make sure it
-behave identically. These are the gdb commands I used:
+After fixing the emulator I ran the virtual machine with gdb to make sure it
+behave identically. These are the gdb commands used:
 
 ```console
 $ gdb vm
@@ -145,15 +145,15 @@ run
 continue
 ```
 
-This breaks after each interpreted instruction (65 being an instruction offset).
-Each *continue* executes the next bytecode instruction.
+This breaks after each interpreted instruction (65 being an instruction
+offset). Each *continue* executes the next bytecode instruction.
 
 After each instruction I inspected the register changes, compared it with the
-output of my emulator and resorting to fixing the emulator whenever there where
-differences.
+output of my emulator and resorting to fixing the emulator whenever there
+where differences.
 
 ```console
-# cat regs/reg3
+# cat regs/reg3 # note: line breaks added for clarity
 -01
 # cat regs/reg0
 0
@@ -162,14 +162,13 @@ differences.
 ```
 
 Debugger (gdb with pwndbg frontend) output, showing the next instruction 'K'
-being executed. Please note how nice pwndbg outlines the registers used as
-arguments of function calls and how it uses different colors for things laying
-in stack, heap, code and data sections:
+being executed. Please note the nice outline of the registers used as
+arguments of function calls and how it uses different colors for stack, heap,
+code and data:
 
 ![gdb executing the K instruction](gdb.png)
 
-After having fixed the emulator it was much simpler using it to concentrate on
-the reverse engineering the bytecode instead of using the debugger.
+After having fixed the emulator I solved the first obvious obstacles:
 
 ```console
 $ python3 emulator.py
@@ -184,7 +183,7 @@ FileNotFoundError: [Errno 2] No such file or directory: 'flag.txt'
 ```
 
 Creating the missing file and starting again. Looking at the first few seek
-instructions. I found this flag.txt string counting code:
+instructions I found this flag.txt string counting code:
 
 ```console
 $ echo "openECSC{ABCD}" > flag.txt
@@ -204,7 +203,7 @@ b'S'0x2c5:143 regb=remove_last(regb)=openECSC{AB
 b'U'0x1c82f:10986 Wrong!
 ```
 
-A few lines down the string count 14 is compared with the wanted number 37.
+A few lines down the flag count 14 is compared with the desired number 37.
 
 ```console
 b'Q'0x2e3:188 regb=add(reg3,regb)=34
@@ -221,7 +220,7 @@ b'Q'0x300:198 rega=add(rega,reg3)=6
 b')'0x304:199 seek(0x30a) if regb==regc
 ```
 
-Next fix the string length to uncover the rest of the algorithm needed to
+Next I fixed the string length to uncover the rest of the algorithm needed to
 recover the flag:
 
 ```console
@@ -229,24 +228,24 @@ $ cat flag.txt
 openECSC{ABCDEFGHIJKLMNOPQRSTUVWXYYZ}
 ```
 
-Then I identified the next seek which chose the wrong path. I resorted to
-patching the bytecode to go the other path (replacing != with ==). I did the
-patch in the hexdump of the bytecode and then used xxd -r to reverse it back to
-binary. I thought I just need to unlock the code like on the first day. However
-it turned out this was not the case at all! It just showed the hidden
-complexity of this challenge and me going down the rabbit hole:
+Then I identified the next seek which chose the wrong path, resorting to
+patching the bytecode to go the other path (replacing *!=* with *==*). The
+patch was done in the hexdump of the bytecode and then `xxd -r` reversed it
+back to binary. I thought I just need to unlock the code like on the first day.
+However it turned out this was not the case at all! It just showed the hidden
+complexity of the challenge and me going down the rabbit hole:
 
 ```console
 $ python3 emulator.py | wc -l
 21594
 ```
 
-Then I did some runs with changed characters in the flag.txt file and
-diffed the output logs. Thus I found out the executed code is pretty
-independent of the flag. Next I identified all exit points of the program in
-the bytecode. And executed the bytecode in front of it. I used dd to copy parts
-of the binary to execute them using the emulator. Thus I found the correct exit
-point:
+Next I did some runs with changed characters in the flag.txt file and run
+`diff` to compare the logs. Finding out the executed code is pretty independent
+of the flag. Next I identified all exit points of the program in the bytecode
+`python3 emulator.py | grep exit`. And executed the bytecode in front of it. I
+used `dd` to copy parts of the binary to execute them using the emulator. Thus
+the exit point which prints **Correct!** was found:
 
 ```console
 $ dd if=bytecode.orig bs=1 skip=1498 of=bytecode
@@ -256,42 +255,58 @@ b'U'0xcd:74 Correct!
 b'W'0xce:75 exit
 ```
 
-Because of the obvious complexity I concluded I need to write a decompiler to
-focus more on the structure for the bytecode. Interestingly this was simple,
-starting from the emulator codebase. The decompiler also did evaluate
-instructions, it just behaved differently in that it does not follow jumps.
+Because of the bytescodes complexity I concluded I need to write a decompiler
+to focus more on the structure. Interestingly this was very simple, starting
+from the emulator codebase. The decompiler also did evaluate instructions in
+order to be able to print the constants used (there are no compile time
+constants in this vm, all of them are created programmatically). Compared
+with the emulator the main difference is it does not follow seeks (jumps).
 
 ```console
 $ python3 decompiler.py  | wc -l
 44850
 ```
 
-The bytecode contains 44850 instructions!
-Next I looked at the output of the decompiler and found symmetric patterns:
+The bytecode contains a lot of instructions!
+Looking for symmetric patterns in the output using `grep` I found:
 
-1. 37 constants which are multiplied with each flag
-2. The outcome of this multiplication is compared with another constant value
+1. 37 constant which are multiplied with each ASCII character of flag. This 37
+   constants/coefficients where prepared using seeks.
+2. The outcome of which is added and compared with another value. The outcome
+   of every equation was again compared followed by a seek to exit and fail if
+   the value does not match.
 
-This looks like a linear equation.
-A system of linear equations?
 This was the breakthrough!
-I verified my assumption immediately using grep (just grep for seek).
 
-And indeed or each of the 37 equations 37 coefficients where prepared using
-seeks. And the outcome of every equation was again compared with a seek to
-jump to exit and fail.
+**system of linear equations found in the bytecode**
 
-Next I patched the decompiler to print the coefficients and the outcome of the
-equations to stderr (see FIXME comments in the script). The stderr output I
-piped to a file and used vim macros to change the format to python lists.
+$$
+a_{1,1} x_{37} + a_{1,2} x_{36}+ \cdots + a_{1,37} x_{1} = b_1 \\
+a_{2,1} x_{37} + a_{2,2} x_{36}+ \cdots + a_{2,37} x_{1} = b_2 \\
+\cdots \\
+a_{37,1} x_{37} + a_{37,2} x_{36}+ \cdots + a_{37,37} x_{1} = b_{37} \\
+$$
 
-Checked my code using wc - must be 37 times 37 (1369) in matrix.
-And 37 in vector.
+Whereas $a_{i,j}$ represents a matrix of coefficients. Called *A* or *matrix* below.\
+$x_{k}$ denotes the $k$'th ASCII character of the flag.\
+$b_{i}$ represents the constant term of the $i$'th equation. Called *B* or *vector* below.
+
+From now on it was straight-forward:
+
+* I patched the decompiler to print the coefficients and the constant term to
+  stderr (see FIXME comments in the script).
+* The stderr output I piped to a file and used vim macros to change the format
+  to python lists.
+* Checked my code using wc - must be 37 times 37 (1369) in matrix. And 37 in
+  vector.
+* I used sagemath to solve the system of linear equations which gave me the
+  flag.
 
 ```console
 $ python3 decompiler.py 2>matrix
 $ wc -l matrix
 1369
+$ vi decompiler.py # see FIXME comment inside
 $ python3 decompiler.py 2>vector
 $ wc -l vector
 37
@@ -302,10 +317,10 @@ $ vi matrix.py
 $ cat matrix.py vector.py >> solve.sage
 ```
 
-Then I used sage math interactively to solve the system of equations.
+Then I used sagemath interactively to solve the system of equations.
 
 ```console
-$ docker run -it  sagemath/sagemath
+$ docker run -it sagemath/sagemath
 
 A = matrix([[74, 46, 70, 79, 58, 39, 41, 26, 46, 01, 79, 01, 27, 66, 34, 83, 97, 35, 94, 79, 37, 17, 76, 59, 97, 95, 01, 70, 26, 28, 99, 01, 95, 51, 10, 61, 44],
 [48, 74, 4, 92, 01, 26, 42, 94, 78, 44, 80, 62, 61, 27, 80, 48, 38, 46, 32, 92, 98, 66, 4, 7, 6, 61, 96, 71, 3, 32, 70, 94, 72, 60, 45, 9, 45],
@@ -345,12 +360,12 @@ A = matrix([[74, 46, 70, 79, 58, 39, 41, 26, 46, 01, 79, 01, 27, 66, 34, 83, 97,
 [48, 5, 72, 84, 011, 33, 87, 22, 93, 100, 59, 26, 21, 29, 97, 10, 86, 10, 9, 3, 49, 59, 47, 25, 57, 34, 25, 95, 29, 6, 5, 80, 8, 98, 76, 90, 33],
 [34, 18, 26, 84, 76, 99, 01, 86, 87, 69, 21, 42, 65, 57, 71, 59, 15, 70, 15, 61, 73, 88, 76, 2, 61, 89, 47, 28, 47, 52, 33, 39, 13, 15, 5, 33, 28]])
 
-Y = vector([172921, 165441, 154900, 154675, 164170, 140999, 181364, 176240, 153637, 168892, 199062, 158610, 170073, 157596, 168574, 152795, 162218, 198124, 175299, 179403, 145075, 168661, 161959, 134271, 155510, 182674, 169645, 162123, 188831, 151273, 149344, 145154, 167698, 172352, 187042, 155223, 164628])
+B = vector([172921, 165441, 154900, 154675, 164170, 140999, 181364, 176240, 153637, 168892, 199062, 158610, 170073, 157596, 168574, 152795, 162218, 198124, 175299, 179403, 145075, 168661, 161959, 134271, 155510, 182674, 169645, 162123, 188831, 151273, 149344, 145154, 167698, 172352, 187042, 155223, 164628])
 
-A.solve_right(Y)
+A.solve_right(B)
 (125, 53, 97, 53, 101, 50, 56, 53, 95, 109, 118, 95, 114, 101, 104, 116, 48, 110, 52, 95, 55, 115, 117, 106, 95, 115, 116, 49, 123, 67, 83, 67, 69, 110, 101, 112, 111)
 
-X = A.solve_right(Y)
+X = A.solve_right(B)
 str = ""
 for x in reversed(X):
     str = str + chr(x)
@@ -361,8 +376,12 @@ str
 
 ## Conclusion
 
-I am pretty happy with the solution. I think the decisions and methodologies
-taken where appropriate for the challenge. Please note that all source code is
-posted as is. I did not polish it after solving to provide a realistic reading
-experience.
+I really liked the challenge and I think the decisions and methodologies
+taken where appropriate for solving it fast.
+
+As usually, the hardest part, namely identifying the system of linear
+equations, was solved using simple tools like `grep`.
+
+Please note that all source code is posted as is was. It was not polished
+after the challenge by intent to provide a realistic reading experience.
 
