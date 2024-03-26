@@ -280,12 +280,10 @@ This was the breakthrough!
 
 **system of linear equations found in the bytecode**
 
-$$
-a_{1,1} x_{37} + a_{1,2} x_{36}+ \cdots + a_{1,37} x_{1} = b_1 \\
-a_{2,1} x_{37} + a_{2,2} x_{36}+ \cdots + a_{2,37} x_{1} = b_2 \\
-\cdots \\
-a_{37,1} x_{37} + a_{37,2} x_{36}+ \cdots + a_{37,37} x_{1} = b_{37} \\
-$$
+$$a_{1,1} x_{37} + a_{1,2} x_{36}+ \cdots + a_{1,37} x_{1} = b_1$$
+$$a_{2,1} x_{37} + a_{2,2} x_{36}+ \cdots + a_{2,37} x_{1} = b_2$$
+$$\cdots$$
+$$a_{37,1} x_{37} + a_{37,2} x_{36}+ \cdots + a_{37,37} x_{1} = b_{37}$$
 
 Whereas $a_{i,j}$ represents a matrix of coefficients. Called *A* or *matrix* below.\
 $x_{k}$ denotes the $k$'th ASCII character of the flag.\
