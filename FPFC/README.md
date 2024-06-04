@@ -17,7 +17,7 @@ Invalid input
 ```
 
 I started analyzing the binary with ghidra, renaming functions, changing
-function signatures and creating structs for vectors. Most of the code was floating point instructions and a lot of trigonometry. The floating point stuff and alot of conversions between float and double was making the binary hard to reverse engineer.
+function signatures and creating structs for vectors. Most of the code was floating point instructions and a lot of trigonometry. The floating point stuff and a lot of conversions between float and double was making the binary hard to reverse engineer.
 
 Determining the input syntax it must be A-Z and a multiple of 4:
 
@@ -46,13 +46,13 @@ Next thing I found was the win condition. Reaching the origin provided the flag.
 
 ![win condition](./win_condition.png)
 
-The main logic of the program was these two code sections. Please note the the code is only as readable because of alot of manual reverse engineering work (namely symbol renaming and struct creation) - the binary was stripped completely from all symbolic information:
+The main logic of the program was these two code sections. Please note the code is only as readable because of a lot of manual reverse engineering work (namely symbol renaming and struct creation) - the binary was stripped completely from all symbolic information:
 
 This code does convert polar coordinates to cartesian:
 
 ![to cartesian](./to_cartesian.png)
 
-And this code is part of the vector_add function called from the code above. This function caclulates intersection point between two line segments.
+And this code is part of the vector_add function called from the code above. This function calculates intersection point between two line segments.
 
 ![intersection](./intersection.png)
 
@@ -60,7 +60,7 @@ And this code is part of the vector_add function called from the code above. Thi
 Seeing this code I thought the intersection between the line segment
 and the input vector just determines the next starting point.
 
-The following input was crafted manually by going into the direction of the origin and calculating the vectors with a calculator. At that time I thought I will reach origin evntually by just going into the right direction.
+The following input was crafted manually by going into the direction of the origin and calculating the vectors with a calculator. At that time I thought I will reach origin eventually by just going into the right direction.
 
 I used gdb to make sure my assumptions where right.
 The breakpoint was set to an address where the current position was updated. The 'x' command displays the memory address of the global variable that holds this position. 0x555555559018 is the address of the global variable:
@@ -74,7 +74,7 @@ QFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZQFZZ
 
 Thus I decided it was time to visualize the line segments I found in memory! After dumping them with ghidra into a text file I wrote a python program which displayed the data. 
 
-This was the breakthrough. Visualizeing the lines and using gdb with crafted input data and visualizing the newly calculated points I saw that the line segments where reflecting my vector. So the lines where mirrors! And the pane was a labyrinth!
+This was the breakthrough. Visualizing the lines and using gdb with crafted input data and visualizing the newly calculated points I saw that the line segments where reflecting my vector. So the lines where mirrors! And the pane was a labyrinth!
 
 ![input semantic](./visual.png)
 
@@ -109,7 +109,7 @@ $ python3 tool.py 1 0 0 0
 r: 1 phi: 3.14 -> MZBB
 ```
 
-Thats it now I reached the origin. After submitting my input vectors to the server I got my flag on the first try:
+After submitting my input vectors to the server I got my flag on the first try:
 
 ```console
 $ nc fpfc.challs.open.ecsc2024.it 38015
