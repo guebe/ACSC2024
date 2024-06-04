@@ -1,0 +1,44 @@
+
+This file was written during debugging to log important addresses for breakpointing
+pwngdb nextcall command is cool
+ans so is gdbs finish
+helped me to find the interesting addresses pretty quick!
+
+global buffer for input converted from ASCII to floats
+pwndbg> x/8fw 0x55555555a730
+0x55555555a730:	6.28318548	25	0	0
+0x55555555a740:	0	0	1.86811302e-40	0
+
+in main: address of malloc call
+0x555555555f32
+
+in main: after round(result.x)
+0x555555555f6d
+
+in maid: before input read
+0x555555555ddb
+
+in main: outer vector_sum_input function call
+0x555555555f3a
+
+    in vector_sum_input: before calling vecto_sum for each input
+    0x555555555d5a
+
+       in vector_sum function: top of function
+       0x555555555beb
+
+       determine absolute global address of result for debugging (position independent executable)
+       0x555555555c07 + 0x3411
+
+       tried it out - it works! 100, 90 are the starting coordinates through the maze.
+       print global x and y
+       pwndbg> x/8f 0x555555559018
+       0x555555559018:	0	0	100	90
+       0x555555559028:	0	0	0	0
+
+    in vector_sum_input after vector_sum call for each input word
+    0x555555555d5f
+
+in main after vector_sum_input call
+0x555555555f3f
+
