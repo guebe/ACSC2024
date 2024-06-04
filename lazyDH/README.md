@@ -8,7 +8,7 @@ be rewritten as $gb^a \times gb^{111111111111111111111111111111111111111}$
 * $gb^a$ is given (in the variable *shared*)
 * $gb$ is also given
 
-so we rewrite it as
+Thus, we may rewrite it as
 $shared \times gb ^ {111111111111111111111111111111111111111}$
 
 Because of the number $111111111111111111111111111111111111111$ 
